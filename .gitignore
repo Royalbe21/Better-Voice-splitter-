@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+voicesplit/
+
+# Audio inputs/outputs
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.ogg
+separated/
+outputs/
+speaker_segments/
+combined_speakers/
+exports/
+stems/
+
+# App/runtime
+settings.json
+*.log
+
+# Windows
+Thumbs.db
+desktop.ini

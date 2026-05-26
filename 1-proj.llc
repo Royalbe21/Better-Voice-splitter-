@@ -1,0 +1,17 @@
+{
+  version: 2,
+  mediaFileName: '1.WAV',
+  cutSegments: [
+    {
+      start: 0,
+      end: 900,
+      name: '',
+      selected: true,
+    },
+    {
+      start: 900.1065719360573,
+      name: '',
+      selected: true,
+    },
+  ],
+}

@@ -16,6 +16,7 @@ from tkinter import filedialog, messagebox, ttk
 
 APP_TITLE = "Easy Voice Splitter"
 PYANNOTE_MODEL = "pyannote/speaker-diarization-3.1"
+DEMUCS_MODEL = "mdx_extra_q"
 SETTINGS_PATH = Path(os.environ.get("APPDATA", Path.home())) / APP_TITLE / "settings.json"
 
 
@@ -294,10 +295,13 @@ class SimpleVoiceSplitterApp:
             self._run_demucs(src, stems_dir)
             self._raise_if_canceled()
 
-            vocals = stems_dir / "htdemucs" / src.stem / "vocals.wav"
-            instrumental = stems_dir / "htdemucs" / src.stem / "no_vocals.wav"
+            vocals = stems_dir / DEMUCS_MODEL / src.stem / "vocals.wav"
+            instrumental = stems_dir / DEMUCS_MODEL / src.stem / "no_vocals.wav"
             if not vocals.exists() or not instrumental.exists():
-                raise RuntimeError("Demucs finished, but the expected vocal files were not found.")
+                raise RuntimeError(
+                    "Demucs finished, but the expected vocal files were not found. "
+                    f"Expected: {vocals} and {instrumental}"
+                )
 
             exports_dir = out / "exports"
             exports_dir.mkdir(exist_ok=True)
@@ -340,19 +344,20 @@ class SimpleVoiceSplitterApp:
             self.root.after(0, self.finish)
 
     def _run_demucs(self, src: Path, stems_dir: Path) -> None:
-       command = [
-    sys.executable,
-    "-m",
-    "demucs.separate",
-    "--two-stems",
-    "vocals",
-    "-n",
-    "htdemucs_ft",
-    "-o",
-    str(stems_dir),
-    str(src),
-]
+        command = [
+            sys.executable,
+            "-m",
+            "demucs.separate",
+            "--two-stems",
+            "vocals",
+            "-n",
+            DEMUCS_MODEL,
+            "-o",
+            str(stems_dir),
+            str(src),
+        ]
         self._log("Running Demucs vocal separation...")
+        self._log("Command: " + " ".join(command))
 
         self.active_process = subprocess.Popen(
             command,
@@ -386,6 +391,7 @@ class SimpleVoiceSplitterApp:
         self._log("Loading pyannote speaker diarization model...")
 
         try:
+            import torch
             from huggingface_hub import HfFolder
             from pydub import AudioSegment
             from pyannote.audio import Pipeline
@@ -398,13 +404,11 @@ class SimpleVoiceSplitterApp:
 
         try:
             pipeline = Pipeline.from_pretrained(PYANNOTE_MODEL, use_auth_token=token)
-import torch
-
-if torch.cuda.is_available():
-    pipeline.to(torch.device("cuda"))
-    self._log("Using CUDA acceleration for pyannote.")
-else:
-    self._log("CUDA not available. Using CPU.")
+            if torch.cuda.is_available():
+                pipeline.to(torch.device("cuda"))
+                self._log("Using CUDA acceleration for pyannote.")
+            else:
+                self._log("CUDA not available. Using CPU.")
         except Exception as exc:
             raise RuntimeError(
                 "Could not load the pyannote speaker model. Make sure your Hugging Face "
@@ -444,14 +448,11 @@ else:
             end_ms = min(len(audio), int(segment.end * 1000) + padding_ms)
             clip = audio[start_ms:end_ms]
 
-# normalize volume
-clip = clip.normalize()
-
-# trim silence
-clip = clip.strip_silence(
-    silence_len=200,
-    silence_thresh=-40
-)
+            clip = clip.normalize()
+            clip = clip.strip_silence(
+                silence_len=200,
+                silence_thresh=-40,
+            )
 
             clip_path = ""
             if self.export_speaker_clips.get():
@@ -613,6 +614,8 @@ clip = clip.strip_silence(
 
         packages = {
             "demucs": "demucs",
+            "diffq": "diffq",
+            "soundfile": "soundfile",
             "pydub": "pydub",
             "pyannote.audio": "pyannote.audio",
             "huggingface_hub": "huggingface_hub",

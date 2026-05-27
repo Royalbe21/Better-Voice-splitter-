@@ -1,7 +1,14 @@
-pyannote.audio>=3.1.1
+# Stable stack for Easy Voice Splitter
+# Install PyTorch/Torchaudio CUDA manually first if you want GPU acceleration.
+# Working example:
+# pip install torch==2.5.1+cu124 torchaudio==2.5.1+cu124 torchvision==0.20.1+cu124 --index-url https://download.pytorch.org/whl/cu124
+
+numpy<2
+pyannote.audio==3.1.1
+speechbrain==0.5.16
+huggingface_hub<1.0
 pydub>=0.25.1
 ffmpeg-python>=0.2.0
-demucs>=4.0.1
+demucs==4.0.1
 diffq>=0.2.4
 soundfile>=0.12.1
-huggingface_hub>=0.23.0
